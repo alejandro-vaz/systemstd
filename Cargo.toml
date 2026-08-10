@@ -1,0 +1,31 @@
+[package]
+name = "systemstd"
+description = "A custom embedded terminal handler"
+version = "5.0.2"
+edition = "2024"
+rust-version = "1.99"
+categories = ["accessibility", "command-line-interface", "config", "filesystem", "rust-patterns"]
+keywords = ["system", "io", "cli", "errors"]
+repository = "https://github.com/alejandro-vaz/systemstd"
+license = "MIT"
+authors = ["Alejandro Vaz <alejandro.vaz.myt@gmail.com>"]
+
+[lib]
+path = "./mod.rs"
+
+[[bench]]
+name = "systemstd"
+harness = false
+path = "benches.rs"
+
+[[test]]
+name = "systemstd"
+path = "tests.rs"
+
+[dependencies]
+issuing = "0.6"
+rich_rust = "0.2"
+enum-as-inner = "0.7"
+
+[dev-dependencies]
+criterion = "0.8"
