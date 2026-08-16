@@ -112,8 +112,8 @@ impl<'valid> Into<Issue> for IoError<'valid> {
         },
         IoError::ParsingSetting {value, numbererror, floaterror} => Issue {
             name: "failed to parse setting value",
+            description: Some(format!("failed to parse {value:?}")),
             sections: Vec::from([
-                Section::Description(format!("failed to parse value {value:?}")),
                 Section::Traceback(numbererror.to_string()),
                 Section::Traceback(floaterror.to_string())
             ]),
@@ -121,36 +121,33 @@ impl<'valid> Into<Issue> for IoError<'valid> {
         },
         IoError::ParsingArgument {argument} => Issue {
             name: "failed to parse argument for command line",
-            sections: Vec::from([
-                Section::Description(format!("failed to parse argument {argument:?}"))
-            ]),
+            description: Some(format!("failed to parse argument {argument:?}")),
             ..
         },
         IoError::DeterminingPathExists {path, error} => Issue {
             name: "failed to check if path exists",
+            description: Some(format!(
+                "couldn't verify {} exists", 
+                path.to_str().map(|name| {
+                    format!("{name:?}")
+                }).unwrap_or(String::from("file"))
+            )),
             sections: Vec::from([
-                Section::Description(format!(
-                    "couldn't verify {} exists", 
-                    path.to_str().map(|name| {
-                        format!("{name:?}")
-                    }).unwrap_or(String::from("file"))
-                )),
                 Section::Traceback(error.to_string())
             ]),
             ..
         },
         IoError::ParsingCommandLineArguments {errors} => Issue {
             name: "failed to parse CLI arguments",
+            description: Some(format!(
+                "failed to parse {} argument{}",
+                errors.len(),
+                if errors.len() != 1 {"s"} else {""}
+            )),
             sections: {
-                let mut sections = Vec::from([Section::Description(format!(
-                    "failed to parse {} argument{}",
-                    errors.len(),
-                    if errors.len() != 1 {"s"} else {""}
-                ))]);
-                sections.extend(errors.into_iter().map(|error| {
+                errors.into_iter().map(|error| {
                     Section::Child(error.into())
-                }));
-                sections
+                }).collect()
             },
             ..
         }

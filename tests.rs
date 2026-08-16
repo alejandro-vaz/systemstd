@@ -85,16 +85,16 @@ fn nested() -> () {
     }
     let first = Issue {
         name: "this one is nested",
+        description: Some(format!("checking format is alright")),
         sections: Vec::from([
-            Section::Description(format!("checking format is alright")),
             Section::Traceback(format!("this issue comes from hell"))
         ]),
         ..
     };
     let second = Issue {
         name: "hello",
+        description: Some(String::from("description!!!")),
         sections: Vec::from([
-            Section::Description(format!("description!!!")),
             Section::Child(first),
             Section::Help(format!("die")),
             Section::Note(format!("please"))
@@ -104,8 +104,9 @@ fn nested() -> () {
     System::error::<VeryImportant>(second);
     let third = Issue {
         name: "third example",
+        deprecation: Some(format!("please don't use this")),
+        description: Some(String::from("see some code")),
         sections: Vec::from([
-            Section::Description(format!("see some code")),
             Section::Code {
                 code: String::from("println!(\"hello\")"),
                 message: String::from("this line prints hello to the console"),

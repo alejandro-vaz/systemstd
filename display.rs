@@ -53,16 +53,21 @@ pub fn display<Mode: Severity>(issue: Issue) -> String {return format!(
                     format!("[gray]{number:>4}[/]")
                 } else {String::new()}
             ),
-            Section::Description(string) => string,
             Section::Help(string) => format!("[cyan]help[/]: {string}"),
             Section::Note(string) => format!("[yellow]note[/]: {string}"),
             Section::Traceback(string) => format!("[gray]traceback[/]: {string}")
-        }}).collect::<Vec<String>>().join("\n");
-        if !sections.is_empty() {
-            sections.insert_str(0, "\n")
+        }}).collect::<Vec<String>>();
+        if let Some(description) = issue.description {
+            sections.insert(0, description)
         };
-        let mut new = sections.replace('\n', "\n  [gray]|[/] ");
-        if !sections.is_empty() {new.push('\n');}
+        if let Some(deprecation) = issue.deprecation {
+            sections.insert(0, format!("deprecation: {deprecation}"))
+        }
+        if !sections.is_empty() {
+            sections.insert(0, String::from(""))
+        };
+        let mut new = sections.join("\n").replace('\n', "\n  [gray]|[/] ");
+        if !sections.is_empty() {new.push('\n')};
         new
     }
 )}

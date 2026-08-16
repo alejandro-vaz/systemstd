@@ -23,7 +23,7 @@ name = "systemstd"
 path = "tests.rs"
 
 [dependencies]
-issuing = "4.0"
+issuing = "4.1"
 rich_rust = {version = "0.2", features = ["markdown", "syntax", "syntect"]}
 enum-as-inner = "0.7"
 nonempty = "0.12.0"
