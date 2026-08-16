@@ -11,11 +11,15 @@ use std::{
 //> HEAD -> SUPER
 use super::{
     System,
-    argument::Argument
+    argument::Argument,
+    ioerror::IoError
 };
 
 //> HEAD -> RICH_RUST
 use rich_rust::console::Console;
+
+//> HEAD -> NONEMPTY
+use nonempty::NonEmpty;
 
 
 //^ 
@@ -33,7 +37,11 @@ pub static ARGUMENTS: LazyLock<Vec<Argument>> = LazyLock::new(|| {
             None
         }
     }).collect();
-    if !errors.is_empty() {System::critical(errors)}
+    if !errors.is_empty() {
+        System::error::<System>(IoError::ParsingCommandLineArguments {
+            errors: Box::new(NonEmpty::from((errors.remove(0), errors)))
+        })
+    }
     return parsed;
 });
 

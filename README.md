@@ -10,7 +10,7 @@ This crate exposes the Zero-Sized Type `System` that just refers to the internal
 ```rust
 use systemstd::System;
 
-System::print("hello!");
+System::print("hello! this is *Markdown*", true);
 ```
 
 For more information about usage and features, see [`systemio`](https://crates.io/crates/systemio).

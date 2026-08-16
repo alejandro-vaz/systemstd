@@ -12,41 +12,36 @@
 #![feature(const_trait_impl)]
 #![feature(core_io)]
 #![feature(generic_const_exprs)]
-#![feature(try_blocks)]
 #![feature(default_field_values)]
+#![feature(never_type)]
 
 //> HEAD -> MODULES
 mod argument;
 mod clitype;
 mod data;
 mod descriptor;
+mod display;
 mod handling;
 mod ioerror;
 mod metadata;
 mod openmode;
 mod path;
-mod problem;
+mod severity;
 
 //> HEAD -> STD
 use std::{
-    panic::set_hook,
-    path::PathBuf
+    path::PathBuf,
+    panic::set_hook
 };
 
 //> HEAD -> CORE
-use core::fmt::{
-    Debug,
-    Display
-};
+use core::fmt::Debug;
 
 //> HEAD -> IOERROR
 pub use ioerror::IoError;
 
 //> HEAD -> ISSUING
 use issuing::Issue;
-
-//> HEAD -> PROBLEM
-use problem::Problem;
 
 //> HEAD -> ARGUMENT
 pub use argument::Argument;
@@ -73,6 +68,15 @@ use data::{
 //> HEAD -> HANDLING
 pub use handling::Handling;
 
+//> HEAD -> RICH_RUST
+use rich_rust::prelude::Markdown;
+
+//> HEAD -> SEVERITY
+pub use severity::Severity;
+
+//> HEAD -> DISPLAY
+use display::display;
+
 
 //^
 //^ SYSTEM
@@ -87,32 +91,33 @@ impl System {
     pub fn path(
         filename: impl Into<PathBuf>
     ) -> Path {return Path::from(filename.into())}
-    pub fn warning(object: impl Into<Issue>) -> () {
-        CONSOLE.print(&Problem {
-            issue: Into::<Issue>::into(object),
-            severity: Some(false)
-        }.to_string());
+    pub fn error<Mode: Severity>(object: impl Into<Issue>) -> Mode::Then {
+        CONSOLE.print(&display::<Mode>(object.into()));
+        return Mode::done();
     }
-    pub fn error(object: impl Into<Issue>) -> () {
-        CONSOLE.print(&Problem {
-            issue: Into::<Issue>::into(object),
-            severity: Some(true)
-        }.to_string());
+    pub fn expect<Mode: Severity<Then = !>, Type>(
+        result: Result<Type, impl Into<Issue>>
+    ) -> Type {return match result {
+        Ok(value) => value,
+        Err(error) => Self::error::<Mode>(error)
+    }}
+    pub fn print(string: &str, markdown: bool) -> () {if markdown {
+        CONSOLE.print_renderable(&Markdown::new(string))
+    } else {
+        CONSOLE.print_plain(string);
+    }}
+    pub fn debug(value: impl Debug, raw: bool) -> () {
+        CONSOLE.print_plain(&if raw {format!("{value:?}")} else {format!("{value:#?}")});
     }
-    pub fn critical(iterator: impl IntoIterator<Item = impl Into<Issue>>) -> ! {
-        for object in iterator {CONSOLE.print(&Problem {
-            issue: Into::<Issue>::into(object),
-            severity: None
-        }.to_string())}
+}
+
+//> SYSTEM -> SEVERITY
+impl Severity for System {
+    type Then = !;
+    const COLOR: &'static str = "red";
+    const SYMBOL: char = '@';
+    fn done() -> Self::Then {
         set_hook(Box::new(|_| ()));
         panic!();
-    }
-    pub fn expect<Type>(result: Result<Type, impl Into<Issue>>) -> Type {return match result {
-        Ok(value) => value,
-        Err(error) => Self::critical([error])
-    }}
-    pub fn print(value: impl Display) -> () {CONSOLE.print(&value.to_string())}
-    pub fn debug(value: impl Debug, raw: bool) -> () {
-        CONSOLE.print(&if raw {format!("{value:?}")} else {format!("{value:#?}")});
     }
 }

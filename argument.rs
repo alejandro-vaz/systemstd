@@ -60,9 +60,9 @@ impl TryFrom<String> for Argument {
             let mut path = false;
             for character in other.chars() {match character {
                 num if num.is_numeric() => path = true,
-                '/' | '\\' | '.' | ':' | '_' => path = true,
+                '/' | '\\' | '.' | ':' | '_' | '-' => path = true,
                 letter if letter.is_alphabetic() => (),
-                _ => return Err(IoError::FailureParsingArgument {
+                _ => return Err(IoError::ParsingArgument {
                     argument: other
                 })
             }};

@@ -3,7 +3,10 @@
 //^
 
 //> HEAD -> ISSUING
-use issuing::Issue;
+use issuing::{
+    Issue,
+    Section
+};
 
 //> HEAD -> CORE
 use core::io::Error;
@@ -18,6 +21,9 @@ use std::{
     path::PathBuf
 };
 
+//> HEAD -> NONEMPTY
+use nonempty::NonEmpty;
+
 
 //^
 //^ STDIOERROR
@@ -26,81 +32,126 @@ use std::{
 //> STDIOERROR -> ENUM
 #[derive(Debug)]
 pub enum IoError<'valid> {
-    CouldntOpenFile {
+    OpeningFile {
         error: Error,
         name: PathBuf
     },
-    CouldntReadMetadata {
+    ReadingMetadata {
         error: Error
     },
-    CouldntReadFile {
+    ReadingFile {
         error: Error
     },
-    CouldntWriteToFile {
+    WritingToFile {
         error: Error
     },
-    FailedToEncodeRead {
+    EncodingUnicode {
         error: FromUtf8Error
     },
-    UnknownSettingValue {
+    ParsingSetting {
         value: String,
-        errors: (ParseIntError, ParseFloatError)
+        numbererror: ParseIntError,
+        floaterror: ParseFloatError
     },
-    FailureParsingArgument {
+    ParsingArgument {
         argument: String
     },
-    CantKnowIfPathExists {
+    DeterminingPathExists {
         path: &'valid PathBuf,
         error: Error
+    },
+    ParsingCommandLineArguments {
+        errors: Box<NonEmpty<IoError<'valid>>>
     }
 }
 
 //> STDIOERROR -> INTO ISSUE
 impl<'valid> Into<Issue> for IoError<'valid> {
     fn into(self) -> Issue {return match self {
-        IoError::CouldntOpenFile {error, name} => Issue {
+        IoError::OpeningFile {error, name} => Issue {
             name: "failed to open file",
-            help: try {format!(
-                "you might want to create it first: `touch {}`", 
-                name.as_os_str().to_str()?
-            )},
-            traceback: Some(error.to_string()),
+            sections: Vec::from([
+                Section::Help(format!(
+                    "you might want to create it first{}",
+                    match name.as_os_str().to_str() {
+                        None => String::default(),
+                        Some(string) => format!(": `touch {string}`")
+                    }
+                )),
+                Section::Traceback(error.to_string())
+            ]),
             ..
         },
-        IoError::CouldntReadMetadata {error} => Issue {
+        IoError::ReadingMetadata {error} => Issue {
             name: "failed to read file metadata",
-            traceback: Some(error.to_string()),
+            sections: Vec::from([
+                Section::Traceback(error.to_string())
+            ]),
             ..
         },
-        IoError::CouldntReadFile {error} => Issue {
+        IoError::ReadingFile {error} => Issue {
             name: "failed to read file",
-            traceback: Some(error.to_string()),
+            sections: Vec::from([
+                Section::Traceback(error.to_string())
+            ]),
             ..
         },
-        IoError::CouldntWriteToFile {error} => Issue {
+        IoError::WritingToFile {error} => Issue {
             name: "failed to write to file",
-            traceback: Some(error.to_string()),
+            sections: Vec::from([
+                Section::Traceback(error.to_string())
+            ]),
             ..
         },
-        IoError::FailedToEncodeRead {error} => Issue {
+        IoError::EncodingUnicode {error} => Issue {
             name: "failed to encode file to UTF-8",
-            traceback: Some(error.to_string()),
+            sections: Vec::from([
+                Section::Traceback(error.to_string())
+            ]),
             ..
         },
-        IoError::UnknownSettingValue {value, ..} => Issue {
+        IoError::ParsingSetting {value, numbererror, floaterror} => Issue {
             name: "failed to parse setting value",
-            description: Some(format!("string to parse: {value:?}")),
+            sections: Vec::from([
+                Section::Description(format!("failed to parse value {value:?}")),
+                Section::Traceback(numbererror.to_string()),
+                Section::Traceback(floaterror.to_string())
+            ]),
             ..
         },
-        IoError::FailureParsingArgument {argument} => Issue {
+        IoError::ParsingArgument {argument} => Issue {
             name: "failed to parse argument for command line",
-            description: Some(format!("string to parse: {argument:?}")),
+            sections: Vec::from([
+                Section::Description(format!("failed to parse argument {argument:?}"))
+            ]),
             ..
         },
-        IoError::CantKnowIfPathExists {path, error} => Issue {
+        IoError::DeterminingPathExists {path, error} => Issue {
             name: "failed to check if path exists",
-            description: try {format!("couldn't verify {:?} exists", path.to_str()?)},
-            traceback: Some(error.to_string()),
+            sections: Vec::from([
+                Section::Description(format!(
+                    "couldn't verify {} exists", 
+                    path.to_str().map(|name| {
+                        format!("{name:?}")
+                    }).unwrap_or(String::from("file"))
+                )),
+                Section::Traceback(error.to_string())
+            ]),
+            ..
+        },
+        IoError::ParsingCommandLineArguments {errors} => Issue {
+            name: "failed to parse CLI arguments",
+            sections: {
+                let mut sections = Vec::from([Section::Description(format!(
+                    "failed to parse {} argument{}",
+                    errors.len(),
+                    if errors.len() != 1 {"s"} else {""}
+                ))]);
+                sections.extend(errors.into_iter().map(|error| {
+                    Section::Child(error.into())
+                }));
+                sections
+            },
             ..
         }
     }}

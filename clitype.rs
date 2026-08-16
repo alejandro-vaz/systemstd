@@ -37,9 +37,10 @@ impl TryFrom<String> for CliType {
             }),
             Err(error) => error
         };
-        return Err(IoError::UnknownSettingValue { 
+        return Err(IoError::ParsingSetting { 
             value: value, 
-            errors: (number, float)
+            numbererror: number,
+            floaterror: float
         });
     }
 }

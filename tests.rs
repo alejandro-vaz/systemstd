@@ -2,17 +2,29 @@
 //^ HEAD
 //^
 
+//> HEAD -> FEATURES
+#![feature(default_field_values)]
+
 //> HEAD -> SYSTEMSTD
 use systemstd::{
     Argument, 
     CliType, 
     IoError, 
     System,
-    Read
+    Read,
+    Severity,
+    Handling
 };
 
 //> HEAD -> STD
 use std::assert_matches;
+
+//> HEAD -> ISSUING
+use issuing::{
+    Issue,
+    Span,
+    Section
+};
 
 
 //^
@@ -22,13 +34,12 @@ use std::assert_matches;
 //> TESTS -> PRINT
 #[test]
 fn print() -> () {
-    System::print("value");
+    System::print("value. This **is** Markdown boys.\n\n## big title", true);
     System::debug("hello", false);
 }
 
 //> TESTS -> CLI
 #[test]
-#[should_panic]
 fn cli() -> () {
     let _arguments = System::arguments();
 }
@@ -47,16 +58,93 @@ fn arguments() -> () {
         ..
     }));
     assert_matches!(TryInto::<Argument>::try_into("--key=impossible".to_string()), Err(
-        IoError::UnknownSettingValue {..}
+        IoError::ParsingSetting {..}
     ));
     assert_matches!(TryInto::<Argument>::try_into("&".to_string()), Err(
-        IoError::FailureParsingArgument {..}
+        IoError::ParsingArgument {..}
     ));
 }
 
 //> TESTS -> READ
 #[test]
 fn read() -> () {assert_eq!(
-    System::path("Cargo.toml").file::<Read>(systemstd::Handling::AssumeExists).unwrap().read_bytes().unwrap().into_iter().next(),
+    System::path("Cargo.toml").file::<Read>(
+        Handling::AssumeExists
+    ).unwrap().read_bytes().unwrap().into_iter().next(),
     Some(b'[')
 )}
+
+//> TESTS -> NESTED
+#[test]
+fn nested() -> () {
+    pub enum VeryImportant {} impl Severity for VeryImportant {
+        type Then = ();
+        const COLOR: &'static str = "red";
+        const SYMBOL: char = '#';
+        fn done() -> Self::Then {}
+    }
+    let first = Issue {
+        name: "this one is nested",
+        sections: Vec::from([
+            Section::Description(format!("checking format is alright")),
+            Section::Traceback(format!("this issue comes from hell"))
+        ]),
+        ..
+    };
+    let second = Issue {
+        name: "hello",
+        sections: Vec::from([
+            Section::Description(format!("description!!!")),
+            Section::Child(first),
+            Section::Help(format!("die")),
+            Section::Note(format!("please"))
+        ]),
+        ..
+    };
+    System::error::<VeryImportant>(second);
+    let third = Issue {
+        name: "third example",
+        sections: Vec::from([
+            Section::Description(format!("see some code")),
+            Section::Code {
+                code: String::from("println!(\"hello\")"),
+                message: String::from("this line prints hello to the console"),
+                line: Some(1),
+                span: Some(Span::RangeFull(..)),
+                language: "rust"
+            }
+        ]),
+        ..
+    };
+    System::error::<VeryImportant>(third);
+}
+
+//> TESTS -> EMPTY
+#[test]
+fn empty() -> () {
+    pub enum VeryImportant {} impl Severity for VeryImportant {
+        type Then = ();
+        const COLOR: &'static str = "red";
+        const SYMBOL: char = '#';
+        fn done() -> Self::Then {}
+    }
+    let empty = Issue {
+        name: "empty??",
+        ..
+    };
+    System::error::<VeryImportant>(empty);
+}
+
+//> TESTS -> BADARG
+#[test]
+#[should_panic]
+fn badarg() -> () {
+    System::expect::<System, _>(Argument::try_from(format!("&&&&nonsense")));
+}
+
+//> TESTS -> BADSET
+#[test]
+#[should_panic]
+fn badset() -> () {
+    System::expect::<System, _>(Argument::try_from(format!("--a=22s")));
+}

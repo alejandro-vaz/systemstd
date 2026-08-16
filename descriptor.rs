@@ -40,19 +40,19 @@ impl<Mode: OpenMode> Descriptor<Mode> {
     pub fn metadata(&self) -> Result<Metadata, IoError<'static>> {
         return match self.stdfile.metadata() {
             Ok(metadata) => Ok(Metadata::from(metadata)),
-            Err(error) => Err(IoError::CouldntReadMetadata {error})
+            Err(error) => Err(IoError::ReadingMetadata {error: error})
         }
     }
     pub fn read_bytes(&mut self) -> Result<Vec<u8>, IoError<'static>> {
         let mut buffer = Vec::with_capacity(self.metadata()?.size());
         match self.stdfile.read_to_end(&mut buffer) {
             Ok(_) => Ok(buffer),
-            Err(error) => Err(IoError::CouldntReadFile {error})
+            Err(error) => Err(IoError::ReadingFile {error: error})
         }
     }
     pub fn read(&mut self) -> Result<String, IoError<'static>> {
         return String::from_utf8(self.read_bytes()?).map_err(|error| {
-            IoError::FailedToEncodeRead {error: error}
+            IoError::EncodingUnicode {error: error}
         });
     }
 }
@@ -62,7 +62,7 @@ impl<Mode: Writeable> Descriptor<Mode> {
     pub fn write_bytes(&mut self, content: &[u8]) -> Result<(), IoError<'static>> {
         return match self.stdfile.write(content) {
             Ok(_) => Ok(()),
-            Err(error) => Err(IoError::CouldntWriteToFile {error})
+            Err(error) => Err(IoError::WritingToFile {error: error})
         }
     }
     pub fn write(&mut self, content: &str) -> Result<(), IoError<'static>> {

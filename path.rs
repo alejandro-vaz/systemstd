@@ -32,7 +32,7 @@ pub struct Path {
 //> PATH -> IMPLEMENTATION
 impl Path {
     pub fn exists<'valid>(&'valid self) -> Result<bool, IoError<'valid>> {
-        return exists(&self.name).map_err(|error| IoError::CantKnowIfPathExists {
+        return exists(&self.name).map_err(|error| IoError::DeterminingPathExists {
             path: &self.name, 
             error: error 
         })
@@ -50,7 +50,7 @@ impl Path {
         };
         return match options.open(&self.name) {
             Ok(stdfile) => Ok(Descriptor::from(stdfile)),
-            Err(error) => Err(IoError::CouldntOpenFile {
+            Err(error) => Err(IoError::OpeningFile {
                 error: error, 
                 name: self.name
             })

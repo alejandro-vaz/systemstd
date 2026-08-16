@@ -1,7 +1,7 @@
 [package]
 name = "systemstd"
 description = "A custom embedded terminal handler"
-version = "5.1.0"
+version = "6.0.0"
 edition = "2024"
 rust-version = "1.99"
 categories = ["accessibility", "command-line-interface", "config", "filesystem", "rust-patterns"]
@@ -23,9 +23,10 @@ name = "systemstd"
 path = "tests.rs"
 
 [dependencies]
-issuing = "2.0"
-rich_rust = "0.2"
+issuing = "4.0"
+rich_rust = {version = "0.2", features = ["markdown", "syntax", "syntect"]}
 enum-as-inner = "0.7"
+nonempty = "0.12.0"
 
 [dev-dependencies]
 criterion = "0.8"

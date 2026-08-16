@@ -35,10 +35,10 @@ fn benches(criterion: &mut Criterion) -> () {
     const ITERATIONS: usize = 100;
     group.throughput(Throughput::Elements(ITERATIONS as u64));
     group.bench_function("print", |bencher| bencher.iter(|| for _ in 0..ITERATIONS {
-        System::print(black_box("hello!"));
+        System::print(black_box("hello!"), black_box(true));
     }));
     group.bench_function("openread", |bencher| bencher.iter(|| for _ in 0..ITERATIONS {
-        System::expect(System::expect(
+        System::expect::<System, _>(System::expect::<System, _>(
             System::path("README.md").file::<Read>(Handling::AssumeExists)
         ).read());
     }));
