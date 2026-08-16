@@ -109,10 +109,10 @@ fn nested() -> () {
         sections: Vec::from([
             Section::Code {
                 code: String::from("println!(\"hello\")"),
-                message: String::from("this line prints hello to the console"),
+                language: "rust",
                 line: Some(1),
-                span: Some(Span::RangeFull(..)),
-                language: "rust"
+                message: Some(String::from("this line prints hello to the console")),
+                span: Some(Span::RangeFull(..))
             }
         ]),
         ..
