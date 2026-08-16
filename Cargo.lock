@@ -481,9 +481,9 @@ dependencies = [
 
 [[package]]
 name = "issuing"
-version = "4.3.0"
+version = "4.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "64bed1e99a55b49efa2056f866a7a7dba6bde5911b3cc73b00a45101629facab"
+checksum = "05486b0b697649b37dd7ee85a3ab3fcde40a729c52e2931134514c5de32c8bf3"
 dependencies = [
  "enum_dispatch",
 ]
