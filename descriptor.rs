@@ -11,7 +11,7 @@ use std::{
 //> HEAD -> SUPER
 use super::{
     metadata::Metadata,
-    ioerror::IoError,
+    error::Error,
     openmode::{
         OpenMode,
         Writeable
@@ -37,35 +37,43 @@ pub struct Descriptor<Mode: OpenMode> {
 
 //> DESCRIPTOR -> IMPLEMENTATION
 impl<Mode: OpenMode> Descriptor<Mode> {
-    pub fn metadata(&self) -> Result<Metadata, IoError<'static>> {
+    pub fn metadata(&self) -> Result<Metadata, Error<'static>> {
         return match self.stdfile.metadata() {
             Ok(metadata) => Ok(Metadata::from(metadata)),
-            Err(error) => Err(IoError::ReadingMetadata {error: error})
+            Err(ioerror) => Err(Error::ReadingMetadata {
+                ioerror: ioerror
+            })
         }
     }
-    pub fn read_bytes(&mut self) -> Result<Vec<u8>, IoError<'static>> {
+    pub fn read_bytes(&mut self) -> Result<Vec<u8>, Error<'static>> {
         let mut buffer = Vec::with_capacity(self.metadata()?.size());
         match self.stdfile.read_to_end(&mut buffer) {
             Ok(_) => Ok(buffer),
-            Err(error) => Err(IoError::ReadingFile {error: error})
+            Err(ioerror) => Err(Error::ReadingFile {
+                ioerror: ioerror
+            })
         }
     }
-    pub fn read(&mut self) -> Result<String, IoError<'static>> {
-        return String::from_utf8(self.read_bytes()?).map_err(|error| {
-            IoError::EncodingUnicode {error: error}
+    pub fn read(&mut self) -> Result<String, Error<'static>> {
+        return String::from_utf8(self.read_bytes()?).map_err(|ioerror| {
+            Error::EncodingUnicode {
+                ioerror: ioerror
+            }
         });
     }
 }
 
 //> DESCRIPTOR -> WRITE IMPLEMENTATION
 impl<Mode: Writeable> Descriptor<Mode> {
-    pub fn write_bytes(&mut self, content: &[u8]) -> Result<(), IoError<'static>> {
+    pub fn write_bytes(&mut self, content: &[u8]) -> Result<(), Error<'static>> {
         return match self.stdfile.write(content) {
             Ok(_) => Ok(()),
-            Err(error) => Err(IoError::WritingToFile {error: error})
+            Err(ioerror) => Err(Error::WritingToFile {
+                ioerror: ioerror
+            })
         }
     }
-    pub fn write(&mut self, content: &str) -> Result<(), IoError<'static>> {
+    pub fn write(&mut self, content: &str) -> Result<(), Error<'static>> {
         return self.write_bytes(content.as_bytes())
     }
 }

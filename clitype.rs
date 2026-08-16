@@ -3,7 +3,7 @@
 //^
 
 //> HEAD -> SUPER
-use super::ioerror::IoError;
+use super::error::Error;
 
 
 //^
@@ -23,7 +23,7 @@ pub enum CliType {
 
 //> CLITYPE -> TRY FROM STR
 impl TryFrom<String> for CliType {
-    type Error = IoError<'static>;
+    type Error = Error<'static>;
     fn try_from(value: String) -> Result<Self, Self::Error> {
         let number = match value.parse::<u128>() {
             Ok(value) => return Ok(CliType::Integer {
@@ -37,7 +37,7 @@ impl TryFrom<String> for CliType {
             }),
             Err(error) => error
         };
-        return Err(IoError::ParsingSetting { 
+        return Err(Error::ParsingSetting { 
             value: value, 
             numbererror: number,
             floaterror: float

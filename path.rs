@@ -14,7 +14,7 @@ use std::{
 //> HEAD -> SUPER
 use super::{
     descriptor::Descriptor,
-    ioerror::IoError,
+    error::Error,
     openmode::OpenMode,
     handling::Handling
 };
@@ -31,16 +31,16 @@ pub struct Path {
 
 //> PATH -> IMPLEMENTATION
 impl Path {
-    pub fn exists<'valid>(&'valid self) -> Result<bool, IoError<'valid>> {
-        return exists(&self.name).map_err(|error| IoError::DeterminingPathExists {
+    pub fn exists<'valid>(&'valid self) -> Result<bool, Error<'valid>> {
+        return exists(&self.name).map_err(|error| Error::DeterminingPathExists {
             path: &self.name, 
-            error: error 
+            ioerror: error 
         })
     }
     pub fn file<Mode: OpenMode>(
         self, 
         handling: Handling
-    ) -> Result<Descriptor<Mode>, IoError<'static>> {
+    ) -> Result<Descriptor<Mode>, Error<'static>> {
         let mut options = StdFile::options();
         Mode::setup(&mut options);
         match handling {
@@ -50,8 +50,8 @@ impl Path {
         };
         return match options.open(&self.name) {
             Ok(stdfile) => Ok(Descriptor::from(stdfile)),
-            Err(error) => Err(IoError::OpeningFile {
-                error: error, 
+            Err(error) => Err(Error::OpeningFile {
+                ioerror: error, 
                 name: self.name
             })
         }

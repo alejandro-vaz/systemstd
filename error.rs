@@ -9,7 +9,7 @@ use issuing::{
 };
 
 //> HEAD -> CORE
-use core::io::Error;
+use core::io::Error as IoError;
 
 //> HEAD -> STD
 use std::{
@@ -26,27 +26,27 @@ use nonempty::NonEmpty;
 
 
 //^
-//^ STDIOERROR
+//^ ERROR
 //^
 
-//> STDIOERROR -> ENUM
+//> ERROR -> ENUM
 #[derive(Debug)]
-pub enum IoError<'valid> {
+pub enum Error<'valid> {
     OpeningFile {
-        error: Error,
+        ioerror: IoError,
         name: PathBuf
     },
     ReadingMetadata {
-        error: Error
+        ioerror: IoError
     },
     ReadingFile {
-        error: Error
+        ioerror: IoError
     },
     WritingToFile {
-        error: Error
+        ioerror: IoError
     },
     EncodingUnicode {
-        error: FromUtf8Error
+        ioerror: FromUtf8Error
     },
     ParsingSetting {
         value: String,
@@ -58,17 +58,17 @@ pub enum IoError<'valid> {
     },
     DeterminingPathExists {
         path: &'valid PathBuf,
-        error: Error
+        ioerror: IoError
     },
     ParsingCommandLineArguments {
-        errors: Box<NonEmpty<IoError<'valid>>>
+        errors: Box<NonEmpty<Error<'valid>>>
     }
 }
 
-//> STDIOERROR -> INTO ISSUE
-impl<'valid> Into<Issue> for IoError<'valid> {
+//> ERROR -> INTO ISSUE
+impl<'valid> Into<Issue> for Error<'valid> {
     fn into(self) -> Issue {return match self {
-        IoError::OpeningFile {error, name} => Issue {
+        Error::OpeningFile {ioerror, name} => Issue {
             name: "failed to open file",
             sections: Vec::from([
                 Section::Help(format!(
@@ -78,39 +78,39 @@ impl<'valid> Into<Issue> for IoError<'valid> {
                         Some(string) => format!(": `touch {string}`")
                     }
                 )),
-                Section::Traceback(error.to_string())
+                Section::Traceback(ioerror.to_string())
             ]),
             ..
         },
-        IoError::ReadingMetadata {error} => Issue {
+        Error::ReadingMetadata {ioerror} => Issue {
             name: "failed to read file metadata",
             sections: Vec::from([
-                Section::Traceback(error.to_string())
+                Section::Traceback(ioerror.to_string())
             ]),
             ..
         },
-        IoError::ReadingFile {error} => Issue {
+        Error::ReadingFile {ioerror} => Issue {
             name: "failed to read file",
             sections: Vec::from([
-                Section::Traceback(error.to_string())
+                Section::Traceback(ioerror.to_string())
             ]),
             ..
         },
-        IoError::WritingToFile {error} => Issue {
+        Error::WritingToFile {ioerror} => Issue {
             name: "failed to write to file",
             sections: Vec::from([
-                Section::Traceback(error.to_string())
+                Section::Traceback(ioerror.to_string())
             ]),
             ..
         },
-        IoError::EncodingUnicode {error} => Issue {
+        Error::EncodingUnicode {ioerror} => Issue {
             name: "failed to encode file to UTF-8",
             sections: Vec::from([
-                Section::Traceback(error.to_string())
+                Section::Traceback(ioerror.to_string())
             ]),
             ..
         },
-        IoError::ParsingSetting {value, numbererror, floaterror} => Issue {
+        Error::ParsingSetting {value, numbererror, floaterror} => Issue {
             name: "failed to parse setting value",
             description: Some(format!("failed to parse {value:?}")),
             sections: Vec::from([
@@ -119,12 +119,12 @@ impl<'valid> Into<Issue> for IoError<'valid> {
             ]),
             ..
         },
-        IoError::ParsingArgument {argument} => Issue {
+        Error::ParsingArgument {argument} => Issue {
             name: "failed to parse argument for command line",
             description: Some(format!("failed to parse argument {argument:?}")),
             ..
         },
-        IoError::DeterminingPathExists {path, error} => Issue {
+        Error::DeterminingPathExists {path, ioerror} => Issue {
             name: "failed to check if path exists",
             description: Some(format!(
                 "couldn't verify {} exists", 
@@ -133,11 +133,11 @@ impl<'valid> Into<Issue> for IoError<'valid> {
                 }).unwrap_or(String::from("file"))
             )),
             sections: Vec::from([
-                Section::Traceback(error.to_string())
+                Section::Traceback(ioerror.to_string())
             ]),
             ..
         },
-        IoError::ParsingCommandLineArguments {errors} => Issue {
+        Error::ParsingCommandLineArguments {errors} => Issue {
             name: "failed to parse CLI arguments",
             description: Some(format!(
                 "failed to parse {} argument{}",

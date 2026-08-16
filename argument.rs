@@ -5,7 +5,7 @@
 //> HEAD -> SUPER
 use super::{
     clitype::CliType,
-    ioerror::IoError
+    error::Error
 };
 
 //> HEAD -> STD
@@ -42,7 +42,7 @@ pub enum Argument {
 
 //> ARGUMENT -> PARSING
 impl TryFrom<String> for Argument {
-    type Error = IoError<'static>;
+    type Error = Error<'static>;
     fn try_from(value: String) -> Result<Self, Self::Error> {return Ok(match value {
         ref capture if let Some(Some((key, value))) = capture.strip_prefix("--").map(|item| {
             item.split_once('=')
@@ -62,7 +62,7 @@ impl TryFrom<String> for Argument {
                 num if num.is_numeric() => path = true,
                 '/' | '\\' | '.' | ':' | '_' | '-' => path = true,
                 letter if letter.is_alphabetic() => (),
-                _ => return Err(IoError::ParsingArgument {
+                _ => return Err(Error::ParsingArgument {
                     argument: other
                 })
             }};

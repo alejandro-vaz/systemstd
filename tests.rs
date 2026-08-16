@@ -9,7 +9,7 @@
 use systemstd::{
     Argument, 
     CliType, 
-    IoError, 
+    Error, 
     System,
     Read,
     Severity,
@@ -58,10 +58,10 @@ fn arguments() -> () {
         ..
     }));
     assert_matches!(TryInto::<Argument>::try_into("--key=impossible".to_string()), Err(
-        IoError::ParsingSetting {..}
+        Error::ParsingSetting {..}
     ));
     assert_matches!(TryInto::<Argument>::try_into("&".to_string()), Err(
-        IoError::ParsingArgument {..}
+        Error::ParsingArgument {..}
     ));
 }
 
@@ -109,7 +109,7 @@ fn nested() -> () {
         sections: Vec::from([
             Section::Code {
                 code: String::from("println!(\"hello\")"),
-                language: "rust",
+                language: Some("rust"),
                 line: Some(1),
                 message: Some(String::from("this line prints hello to the console")),
                 span: Some(Span::RangeFull(..))

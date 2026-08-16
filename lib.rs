@@ -21,8 +21,8 @@ mod clitype;
 mod data;
 mod descriptor;
 mod display;
+mod error;
 mod handling;
-mod ioerror;
 mod metadata;
 mod openmode;
 mod path;
@@ -37,8 +37,8 @@ use std::{
 //> HEAD -> CORE
 use core::fmt::Debug;
 
-//> HEAD -> IOERROR
-pub use ioerror::IoError;
+//> HEAD -> ERROR
+pub use error::Error;
 
 //> HEAD -> ISSUING
 use issuing::Issue;

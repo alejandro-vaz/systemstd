@@ -12,7 +12,7 @@ use std::{
 use super::{
     System,
     argument::Argument,
-    ioerror::IoError
+    error::Error
 };
 
 //> HEAD -> RICH_RUST
@@ -38,7 +38,7 @@ pub static ARGUMENTS: LazyLock<Vec<Argument>> = LazyLock::new(|| {
         }
     }).collect();
     if !errors.is_empty() {
-        System::error::<System>(IoError::ParsingCommandLineArguments {
+        System::error::<System>(Error::ParsingCommandLineArguments {
             errors: Box::new(NonEmpty::from((errors.remove(0), errors)))
         })
     }
