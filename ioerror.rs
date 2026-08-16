@@ -103,5 +103,5 @@ impl<'valid> Into<Issue> for IoError<'valid> {
             traceback: Some(error.to_string()),
             ..
         }
-    }.assert_normal()}
+    }}
 }
