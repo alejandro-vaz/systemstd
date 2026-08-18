@@ -29,19 +29,13 @@ mod path;
 mod severity;
 
 //> HEAD -> STD
-use std::{
-    path::PathBuf,
-    panic::set_hook
-};
+use std::path::PathBuf;
 
 //> HEAD -> CORE
 use core::fmt::Debug;
 
 //> HEAD -> ERROR
 pub use error::Error;
-
-//> HEAD -> ISSUING
-use issuing::Issue;
 
 //> HEAD -> ARGUMENT
 pub use argument::Argument;
@@ -91,15 +85,15 @@ impl System {
     pub fn path(
         filename: impl Into<PathBuf>
     ) -> Path {return Path::from(filename.into())}
-    pub fn error<Mode: Severity>(object: impl Into<Issue>) -> Mode::Then {
+    pub fn error<Mode: Severity>(object: Mode) -> Mode::Then {
         CONSOLE.print(&display::<Mode>(object.into()));
         return Mode::done();
     }
     pub fn expect<Mode: Severity<Then = !>, Type>(
-        result: Result<Type, impl Into<Issue>>
+        result: Result<Type, Mode>
     ) -> Type {return match result {
         Ok(value) => value,
-        Err(error) => Self::error::<Mode>(error)
+        Err(error) => Self::error(error)
     }}
     pub fn print(string: &str, markdown: bool) -> () {if markdown {
         CONSOLE.print_renderable(&Markdown::new(string))
@@ -108,16 +102,5 @@ impl System {
     }}
     pub fn debug(value: impl Debug, raw: bool) -> () {
         CONSOLE.print_plain(&if raw {format!("{value:?}")} else {format!("{value:#?}")});
-    }
-}
-
-//> SYSTEM -> SEVERITY
-impl Severity for System {
-    type Then = !;
-    const COLOR: &'static str = "red";
-    const SYMBOL: char = '@';
-    fn done() -> Self::Then {
-        set_hook(Box::new(|_| ()));
-        panic!();
     }
 }

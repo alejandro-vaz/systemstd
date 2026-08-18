@@ -16,7 +16,10 @@ use super::{
 };
 
 //> HEAD -> RICH_RUST
-use rich_rust::console::Console;
+use rich_rust::{
+    console::Console,
+    Theme
+};
 
 //> HEAD -> NONEMPTY
 use nonempty::NonEmpty;
@@ -38,7 +41,7 @@ pub static ARGUMENTS: LazyLock<Vec<Argument>> = LazyLock::new(|| {
         }
     }).collect();
     if !errors.is_empty() {
-        System::error::<System>(Error::ParsingCommandLineArguments {
+        System::error(Error::ParsingCommandLineArguments {
             errors: Box::new(NonEmpty::from((errors.remove(0), errors)))
         })
     }
@@ -47,5 +50,15 @@ pub static ARGUMENTS: LazyLock<Vec<Argument>> = LazyLock::new(|| {
 
 //> DATA -> CONSOLE
 pub static CONSOLE: LazyLock<Console> = LazyLock::new(|| {
-    return Console::builder().highlight(false).build();
+    return Console::builder().theme(Theme::from_style_definitions(
+        [
+            ("deprecated", "yellow"),
+            ("basic", "gray"),
+            ("note", "green"),
+            ("error", "bold red"),
+            ("cause", "red"),
+            ("help", "cyan")
+        ], 
+        true
+    ).unwrap()).highlight(false).build();
 });

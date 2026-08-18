@@ -52,7 +52,8 @@ impl Path {
             Ok(stdfile) => Ok(Descriptor::from(stdfile)),
             Err(error) => Err(Error::OpeningFile {
                 ioerror: error, 
-                name: self.name
+                name: self.name,
+                handling: handling
             })
         }
     }

@@ -21,53 +21,60 @@ use core::any::type_name;
 
 //> DISPLAY -> FUNCTION
 pub fn display<Mode: Severity>(issue: Issue) -> String {return format!(
-    "[bold {}]{} {}[/][bold]: {}[/]{}",
-    Mode::COLOR,
-    Mode::SYMBOL,
-    {
-        let name = type_name::<Mode>().as_bytes();
-        let mut first = 0;
-        for index in 0.. {
-            let byte = name.get(index);
-            match byte {
-                None | Some(b'<') => break,
-                Some(b':') => first = index + 1,
-                Some(_) => continue
-            }
-        }
-        unsafe {str::from_utf8_unchecked(&name[first..])}
-    },
+    "[error]# {}[/][bold]: {}[/]{}",
+    name::<Mode>(),
     issue.name,
     {
-        let mut sections = issue.sections.into_iter().map(|section| {match section {
-            Section::Child(issue) => format!("\n{}", display::<Mode>(issue)),
-            Section::Code {
-                code, 
-                message: _message, 
-                line, 
-                span: _span, 
-                language: _language
-            } => format!(
-                "\n[on black]{}    {code}[/]\n",
-                if let Some(number) = line {
-                    format!("[gray]{number:>4}[/]")
-                } else {String::new()}
-            ),
-            Section::Help(string) => format!("[cyan]help[/]: {string}"),
-            Section::Note(string) => format!("[yellow]note[/]: {string}"),
-            Section::Traceback(string) => format!("[gray]traceback[/]: {string}")
-        }}).collect::<Vec<String>>();
-        if let Some(description) = issue.description {
-            sections.insert(0, description)
-        };
-        if let Some(deprecation) = issue.deprecation {
-            sections.insert(0, format!("deprecation: {deprecation}"))
-        }
+        let mut sections = issue.sections.into_iter().map(|next| {
+            section::<Mode>(next)
+        }).collect::<Vec<String>>();
         if !sections.is_empty() {
             sections.insert(0, String::from(""))
         };
-        let mut new = sections.join("\n").replace('\n', "\n  [gray]|[/] ");
-        if !sections.is_empty() {new.push('\n')};
-        new
+        sections.join("\n").replace('\n', "\n  [basic]|[/] ")
     }
 )}
+
+//> DISPLAY -> SECTION
+fn section<Mode: Severity>(section: Section) -> String {return match section {
+    Section::Child(issue) => format!("{}", display::<Mode>(issue)),
+    Section::Code {
+        extends,
+        code, 
+        language: _language,
+        path: _path,
+        line,
+        span: _span
+    } => format!(
+        "> {}\n>\n> [basic]{}[/]  {code}\n>",
+        self::section::<Mode>(*extends),
+        if let Some(number) = line {
+            format!("{number:>4}")
+        } else {String::from("    ")}
+    ),
+    Section::Help(string) => format!("[help]help[/]: {string}"),
+    Section::Note(string) => format!("[note]note[/]: {string}"),
+    Section::Cause(string) => format!("[cause]cause[/]: {string}"),
+    Section::Deprecated(string) => format!("[deprecated]deprecated[/]: {string}")
+}}
+
+//> DISPLAY -> NAME
+fn name<Mode: Severity>() -> &'static str {
+    let name = type_name::<Mode>().as_bytes();
+    let mut first = 0;
+    let mut last = None;
+    for index in 0.. {
+        match name.get(index) {
+            None | Some(b'<') => {
+                last = Some(index);
+                break
+            },
+            Some(b':') => first = index + 1,
+            Some(_) => continue
+        }
+    }
+    return match last {
+        None => unsafe {str::from_utf8_unchecked(&name[first..])},
+        Some(at) => unsafe {str::from_utf8_unchecked(&name[first..at])}
+    };
+}

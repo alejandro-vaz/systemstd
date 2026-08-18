@@ -22,7 +22,6 @@ use std::assert_matches;
 //> HEAD -> ISSUING
 use issuing::{
     Issue,
-    Span,
     Section
 };
 
@@ -77,23 +76,16 @@ fn read() -> () {assert_eq!(
 //> TESTS -> NESTED
 #[test]
 fn nested() -> () {
-    pub enum VeryImportant {} impl Severity for VeryImportant {
-        type Then = ();
-        const COLOR: &'static str = "red";
-        const SYMBOL: char = '#';
-        fn done() -> Self::Then {}
-    }
     let first = Issue {
         name: "this one is nested",
-        description: Some(format!("checking format is alright")),
         sections: Vec::from([
-            Section::Traceback(format!("this issue comes from hell"))
+            Section::Note(format!("checking format is alright")),
+            Section::Cause(format!("this issue comes from hell"))
         ]),
         ..
     };
     let second = Issue {
         name: "hello",
-        description: Some(String::from("description!!!")),
         sections: Vec::from([
             Section::Child(first),
             Section::Help(format!("die")),
@@ -101,51 +93,55 @@ fn nested() -> () {
         ]),
         ..
     };
-    System::error::<VeryImportant>(second);
+    System::error(second);
     let third = Issue {
         name: "third example",
-        deprecation: Some(format!("please don't use this")),
-        description: Some(String::from("see some code")),
         sections: Vec::from([
+            Section::Deprecated(format!("please don't use this")),
+            Section::Note(format!("see some code")),
             Section::Code {
+                extends: Box::new(Section::Note(format!(
+                    "this line prints hello to the console"
+                ))),
                 code: String::from("println!(\"hello\")"),
                 language: Some("rust"),
                 line: Some(1),
-                message: Some(String::from("this line prints hello to the console")),
-                span: Some(Span::RangeFull(..))
+                ..
             }
         ]),
         ..
     };
-    System::error::<VeryImportant>(third);
+    System::error(third);
 }
 
 //> TESTS -> EMPTY
 #[test]
 fn empty() -> () {
-    pub enum VeryImportant {} impl Severity for VeryImportant {
-        type Then = ();
-        const COLOR: &'static str = "red";
-        const SYMBOL: char = '#';
-        fn done() -> Self::Then {}
-    }
-    let empty = Issue {
+    #[derive(Debug)]
+    pub enum VeryImportant {A} 
+    impl Into<Issue> for VeryImportant {
+        fn into(self) -> Issue {Issue {
         name: "empty??",
         ..
-    };
-    System::error::<VeryImportant>(empty);
+    }}
+    }
+    impl Severity for VeryImportant {
+        type Then = ();
+        fn done() -> Self::Then {}
+    }
+    System::error::<VeryImportant>(VeryImportant::A);
 }
 
 //> TESTS -> BADARG
 #[test]
 #[should_panic]
 fn badarg() -> () {
-    System::expect::<System, _>(Argument::try_from(format!("&&&&nonsense")));
+    System::expect(Argument::try_from(format!("&&&&nonsense")));
 }
 
 //> TESTS -> BADSET
 #[test]
 #[should_panic]
 fn badset() -> () {
-    System::expect::<System, _>(Argument::try_from(format!("--a=22s")));
+    System::expect(Argument::try_from(format!("--a=22s")));
 }

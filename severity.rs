@@ -1,11 +1,23 @@
 //^
+//^ HEAD
+//^
+
+//> HEAD -> ISSUING
+use issuing::Issue;
+
+
+//^
 //^ SEVERITY
 //^
 
 //> SEVERITY -> TRAIT
-pub trait Severity {
+pub const trait Severity: Into<Issue> {
     type Then;
-    const COLOR: &'static str;
-    const SYMBOL: char;
     fn done() -> Self::Then;
+}
+
+//> SEVERITY -> ISSUE IMPLEMENTATION
+impl Severity for Issue {
+    type Then = ();
+    fn done() -> Self::Then {}
 }

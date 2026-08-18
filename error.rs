@@ -18,11 +18,18 @@ use std::{
         ParseIntError, 
         ParseFloatError
     },
-    path::PathBuf
+    path::PathBuf,
+    panic::set_hook
 };
 
 //> HEAD -> NONEMPTY
 use nonempty::NonEmpty;
+
+//> HEAD -> SUPER
+use super::{
+    severity::Severity,
+    handling::Handling
+};
 
 
 //^
@@ -34,7 +41,8 @@ use nonempty::NonEmpty;
 pub enum Error<'valid> {
     OpeningFile {
         ioerror: IoError,
-        name: PathBuf
+        name: PathBuf,
+        handling: Handling
     },
     ReadingMetadata {
         ioerror: IoError
@@ -68,8 +76,8 @@ pub enum Error<'valid> {
 //> ERROR -> INTO ISSUE
 impl<'valid> Into<Issue> for Error<'valid> {
     fn into(self) -> Issue {return match self {
-        Error::OpeningFile {ioerror, name} => Issue {
-            name: "failed to open file",
+        Error::OpeningFile {ioerror, name, handling} => Issue {
+            name: "error opening file",
             sections: Vec::from([
                 Section::Help(format!(
                     "you might want to create it first{}",
@@ -78,72 +86,59 @@ impl<'valid> Into<Issue> for Error<'valid> {
                         Some(string) => format!(": `touch {string}`")
                     }
                 )),
-                Section::Traceback(ioerror.to_string())
+                Section::Cause(ioerror.to_string()),
             ]),
             ..
         },
         Error::ReadingMetadata {ioerror} => Issue {
             name: "failed to read file metadata",
             sections: Vec::from([
-                Section::Traceback(ioerror.to_string())
+                Section::Cause(ioerror.to_string())
             ]),
             ..
         },
         Error::ReadingFile {ioerror} => Issue {
             name: "failed to read file",
             sections: Vec::from([
-                Section::Traceback(ioerror.to_string())
+                Section::Cause(ioerror.to_string())
             ]),
             ..
         },
         Error::WritingToFile {ioerror} => Issue {
             name: "failed to write to file",
             sections: Vec::from([
-                Section::Traceback(ioerror.to_string())
+                Section::Cause(ioerror.to_string())
             ]),
             ..
         },
         Error::EncodingUnicode {ioerror} => Issue {
             name: "failed to encode file to UTF-8",
             sections: Vec::from([
-                Section::Traceback(ioerror.to_string())
+                Section::Cause(ioerror.to_string())
             ]),
             ..
         },
         Error::ParsingSetting {value, numbererror, floaterror} => Issue {
             name: "failed to parse setting value",
-            description: Some(format!("failed to parse {value:?}")),
             sections: Vec::from([
-                Section::Traceback(numbererror.to_string()),
-                Section::Traceback(floaterror.to_string())
+                Section::Cause(numbererror.to_string()),
+                Section::Cause(floaterror.to_string())
             ]),
             ..
         },
         Error::ParsingArgument {argument} => Issue {
             name: "failed to parse argument for command line",
-            description: Some(format!("failed to parse argument {argument:?}")),
             ..
         },
         Error::DeterminingPathExists {path, ioerror} => Issue {
             name: "failed to check if path exists",
-            description: Some(format!(
-                "couldn't verify {} exists", 
-                path.to_str().map(|name| {
-                    format!("{name:?}")
-                }).unwrap_or(String::from("file"))
-            )),
             sections: Vec::from([
-                Section::Traceback(ioerror.to_string())
+                Section::Cause(ioerror.to_string())
             ]),
             ..
         },
         Error::ParsingCommandLineArguments {errors} => Issue {
             name: "failed to parse CLI arguments",
-            description: Some(format!(
-                "failed to parse {} argument{}",
-                errors.len(),
-                if errors.len() != 1 {"s"} else {""}
-            )),
             sections: {
                 errors.into_iter().map(|error| {
                     Section::Child(error.into())
@@ -152,4 +147,13 @@ impl<'valid> Into<Issue> for Error<'valid> {
             ..
         }
     }}
+}
+
+//> ERROR -> SEVERITY
+impl<'valid> Severity for Error<'valid> {
+    type Then = !;
+    fn done() -> Self::Then {
+        set_hook(Box::new(|_| ()));
+        panic!();
+    }
 }
