@@ -1115,7 +1115,7 @@ dependencies = [
 
 [[package]]
 name = "systemstd"
-version = "7.1.0"
+version = "7.2.0"
 dependencies = [
  "criterion",
  "enum-as-inner",
